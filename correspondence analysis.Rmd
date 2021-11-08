@@ -1,0 +1,136 @@
+---
+title: "Analiza corespondentelor"
+author: "Neagu Georgeta"
+output: word_document
+---
+
+Pentru analiza corespondentelor am extras date publicate de INSSE cu privire la numărul de sosiri intr-o unitate de primire turistica. Datele sunt impartite pe unitati turistice si macroregiuni, acestea corespunzând anului 2019. Componența macroregiunilor este următoarea 
+(i) macroregiunea 1: regiunile nord-vest si centru; 
+(ii) macroregiunea 2: nord-est si sud-est; 
+(iii) macroregiunea 3: sud-Muntenia si București-Ilfov;
+(iv) macroregiunea 4: sud-vest Oltenia și vest. 
+Datele sunt structurate intr-un tabel de contingenta: 
+
+```{r}
+library(FactoMineR)
+library(corrplot)
+library(ggplot2)
+library(factoextra)
+date<-read.csv("AC2.csv")
+rownames(date)<-date$X
+date<-date[,-1]
+date
+```
+
+> Testul de independenta chi patrat
+
+```{r}
+rez<-CA(date,graph=F)
+eig<-get_eigenvalue(rez)
+eig
+
+s<-sum(eig[,1])
+s
+
+chi2<-s*sum(as.matrix(date))
+chi2
+
+df<-(nrow(date)-1)*(ncol(date)-1)
+df
+
+p<-pchisq(chi2,df,lower.tail = F)
+p
+```
+În urma aplicării testului chi patrat pentru verificarea ipotezei de independență a rândurilor, respectiv coloanelor, se respinge ipoteza nulă, acceptand ipoteza alternativa, ceea ce sugerează faptul că există dependenta intre linii si coloane. Nivelul statisticii calculate, pentru 36 grade de libertate, este 903285.6, iar nivelul probabilității p-value este 0, ceea ce inseamna ca asocierea dintre linii si coloane este semnificativa statistic. 
+
+```{r}
+x2<-chisq.test(date)
+#matricea de contingenta
+x2$observed
+x2
+round(x2$expected,3)
+```
+
+> Profilul pe randuri 
+
+```{r}
+rez$call$marge.col #vect centrului de greutate pentru matricea profil linie
+```
+
+Macroregiunea doi si macroregiunea trei au aproximativ acelasi centru de greutate. 
+Profilul mediu nu este semnificativ pentru unitatile turistice, nu se poate spune care unitate este caracteristica unei macroregiuni anume.
+!!!de pus tabelul din excel cu totalurile de jos.
+
+> Profilul pe coloana
+
+```{r}
+rez$call$marge.row # vect profil coloana
+```
+
+In cazul acesta, se poate observa ca: *bungaloul, campingul,casutele turistice, hotelurile apartament,popasurile turistice si taberele de elevi si prescolari* au centrul de greutate apropiat si vor intra in aceeasi categorie.
+!!!de pus tabelul din excel cu totalurile din dreapta.
+
+> Alegerea si descrierea dimensiunilor + reprezentarea grafica a contributiilor
+
+```{r}
+rez$eig
+fviz_screeplot(rez)
+```
+
+Numarul maxim de dimensiuni, in care poate fi impartit setul de date, este 3. Se vor alege doar 2 dimensiuni, pentru ca in a treia dimensiune este o cantitate de informatie foarte mica (6.32%). Cele 2 dimensiuni vor contine 93.68% din informatie.
+
+```{r}
+rez$col
+```
+
+```{r}
+corrplot(rez$col$contrib[,1:2],is.corr = F)
+```
+
+Macroregiunea trei contribuie cel mai mult la dimensiunea 1, iar macroregiunea trei la cea de-a doua. Macroregiunea patru are o contributie nesemnificativa la cele doua dimensiuni, iar prima macroregiune, contribuie destul de mult la prima dimensiune. Acelasi lucru se poate observa si in calitatea reprezentarii, cos2: macroregiunea unu si trei este bine reprezentata in prima dimensiune, iar macroregiunea doi, in cea de-a doua dimensiune. Luand in considerare calitatea reprezentarii, macroregiunea patru este mai bine reprezentata in dimensiunea 1 decat in dimensiunea 2.
+
+Exemplu in planul celor 2 dimensiuni: macroregiunea unu se afla, in dimensiunea 1, in punctul -0.221, iar in dimensiunea 2, in punctul -0.057.
+
+
+
+```{r}
+fviz_contrib(rez,choice="col",axes=1:2)
+#contributia coloanei wife la definirea celor 2 dim este
+#c1*lambda2+c2*lambda2
+#44.46*0.54+10.3122*0.445
+#linia rosie este contrib asteptata daca era distrib uniforma
+```
+
+Contributia asteptata a macroregiunilor in cele 2 dimensiuni,in cazul in care distributia era uniforma, este de aproximativ 27-28%.
+
+```{r}
+rez$row
+corrplot(rez$row$contrib[,1:2],is.corr = F)
+#contributia fiecarei linii la ambele dimensiuni
+#exemplu pentru laundry: c1*lambda1+c2*lambda2
+#18.28*0.5428+5.56*0.4450
+```
+
+Dimensiunea 1 este caracterizata de hoteluri, pensiuni agroturistice si pensiuni turistice. Acelasi lucru putandu-se observa si in calitatea reprezentarii.
+Dimensiunea 2 este caracterizata de campinguri si bungalouri (contributia nu este foarte mare, dar este vizibila). Din valorile cos2, in aceasta dimensiune intra si casutele turistice.
+Exemplu in planul celor 2 dimensiuni: casutele turistice se afla, in dimensiunea 1, in punctul -0.13, iar in dimensiunea 2, in punctul  0.824.
+
+```{r}
+fviz_contrib(rez,choice="row",axes=1:2)
+```
+
+Contributia asteptata a fiecarei unitati turistice, daca distributia ar fi fost uniforma, este de aproximativ 8-9%.
+
+> Concluzii
+
+```{r}
+fviz_ca_biplot(rez)
+```
+
+Concluziile, in urma analizei corespondentelor, sunt urmatoarele:
+   - macroregiunea unu si patru sunt asemanatoare, in privinta numarului de turisti, si nu sunt zone turistice.
+   - macroregiunea trei este reprezentata de hoteluri, hosteluri, hoteluri apartament, adica turism in interes de serviciu.
+   - macroregiunea doi este reprezentata de un numar mare de unitati de primire turistica, adica zona cea mai dezvoltata, din punct de vedere turistic, si      cu cei mai multi vizitatori.
+
+
+
